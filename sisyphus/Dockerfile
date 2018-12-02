@@ -13,9 +13,12 @@ RUN apt-get -qqy --no-install-recommends install \
 && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip
-RUN pip install \
-	flask \
+RUN pip install flask
 
-COPY . /usr/app
+RUN mkdir /app
+COPY ./app /app
 
-EXPOSE 3000
+WORKDIR /app
+EXPOSE 5000
+ENTRYPOINT ["python"]
+CMD ["main.py"]
