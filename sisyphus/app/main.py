@@ -39,7 +39,6 @@ def diff(directory, file):
             if re.match("(\-|\+)\w+", line): # Searchs for any + or - followed by an alphanumeric expression
                 lines.append(line)
 
-    print bool(lines)
     return lines
 
 
