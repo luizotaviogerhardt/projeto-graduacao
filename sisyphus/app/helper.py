@@ -1,3 +1,4 @@
+import unicodedata
 
 
 def formatOficialExt(name):
@@ -8,3 +9,6 @@ def formatOficialFolder(name):
 
 def removeExt(name):
 	return name.replace('.py', '').replace('.c','')
+
+def unicodeToAscii(code):
+	return unicodedata.normalize('NFKD', code).encode('ascii','ignore')

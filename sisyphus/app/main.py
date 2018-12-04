@@ -117,6 +117,8 @@ def grade():
     inputs = data['inputs']
     o_outs = data['o_outs']
 
+    code = helper.unicodeToAscii(code)
+
     foldername = helper.removeExt(filename)
     qtd_inputs = len(inputs)
     qtd_testes = len(o_outs)
