@@ -7,4 +7,4 @@ def formatOficialFolder(name):
 	return 'o' + name
 
 def removeExt(name):
-	return name.replace('.py', '')
+	return name.replace('.py', '').replace('.c','')

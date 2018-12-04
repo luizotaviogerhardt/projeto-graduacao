@@ -5,6 +5,7 @@ import helper
 import os
 import subprocess
 import json
+import time
 
 from flask import Flask
 from flask import request
@@ -55,8 +56,21 @@ def evaluate(directory, quant):
     return round((1 - frac)*100,2)
 
 def execPython3(cmd):
-    # usar python3 -c se for passar o codigo via string
     p = subprocess.Popen('python3 '+cmd, stdout=subprocess.PIPE, shell=True)
+    return (str(p.communicate()[0]).replace('b','').replace('\'' , '').replace('\\n' , '\n'))
+
+def execPython(cmd):
+    p = subprocess.Popen('python '+cmd, stdout=subprocess.PIPE, shell=True)
+    return (str(p.communicate()[0]).replace('b','').replace('\'' , '').replace('\\n' , '\n'))
+
+def execC(cmd):
+    p = subprocess.Popen('gcc '+cmd, stdout=subprocess.PIPE, shell=True)
+    while not p:
+        time.sleep(1)
+    time.sleep(1)
+    p = subprocess.Popen('./a.out '+cmd, stdout=subprocess.PIPE, shell=True)
+    while not p:
+        time.sleep(1)
     return (str(p.communicate()[0]).replace('b','').replace('\'' , '').replace('\\n' , '\n'))
 
 def generateOutputs(quant, directory, program, lang='Python3'):
@@ -65,9 +79,28 @@ def generateOutputs(quant, directory, program, lang='Python3'):
             file = output_filename+str(i+1)+output_ext
             results = execPython3(program +' < '+ directory+'/'+input_folder_name+input_filename+str(i+1)+input_ext)
 
+            with open(directory+'/'+'out/'+file, 'w') as out:
+                out.write(results.rstrip())
+
+    elif lang == 'Python':
+        for i in range(quant):
+            file = output_filename+str(i+1)+output_ext
+            results = execPython(program +' < '+ directory+'/'+input_folder_name+input_filename+str(i+1)+input_ext)
 
             with open(directory+'/'+'out/'+file, 'w') as out:
                 out.write(results.rstrip())
+
+    elif lang == 'C':
+        for i in range(quant):
+            file = output_filename+str(i+1)+output_ext
+            results = execC(program +' < '+ directory+'/'+input_folder_name+input_filename+str(i+1)+input_ext)
+            print 'RESULTADO AE '+results           
+
+            with open(directory+'/'+'out/'+file, 'w') as out:
+                out.write(results.rstrip())
+
+    
+    os.remove('a.out')
 
 @app.route('/test', methods=['GET'])
 def hello():
@@ -94,6 +127,7 @@ def grade():
         os.makedirs(directory+'/'+'in')
         os.makedirs(directory+'/'+'oout')
         os.makedirs(directory+'/'+'out')
+
 
     i = 1
     for entrada in inputs:

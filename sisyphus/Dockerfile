@@ -6,6 +6,8 @@ USER root
 RUN apt-get update -qqy
 RUN apt-key update
 RUN apt-get -qqy --no-install-recommends install \
+    libc6-dev \
+    gcc \
     python \
     python-pip \
     python3 \
