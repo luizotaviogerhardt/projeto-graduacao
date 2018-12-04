@@ -71,7 +71,7 @@ def execC(cmd):
     p = subprocess.Popen('./a.out '+cmd, stdout=subprocess.PIPE, shell=True)
     while not p:
         time.sleep(1)
-    return (str(p.communicate()[0]).replace('b','').replace('\'' , '').replace('\\n' , '\n'))
+    return (str(p.communicate()[0]).replace('\'' , '').replace('\\n' , '\n'))
 
 def generateOutputs(quant, directory, program, lang='Python3'):
     if lang == 'Python3':
