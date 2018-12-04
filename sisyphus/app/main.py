@@ -56,12 +56,13 @@ def evaluate(directory, quant):
     return round((1 - frac)*100,2)
 
 def execPython3(cmd):
+    print cmd
     p = subprocess.Popen('python3 '+cmd, stdout=subprocess.PIPE, shell=True)
-    return (str(p.communicate()[0]).replace('b','').replace('\'' , '').replace('\\n' , '\n'))
+    return (str(p.communicate()[0]).replace('\'' , '').replace('\\n' , '\n'))
 
 def execPython(cmd):
     p = subprocess.Popen('python '+cmd, stdout=subprocess.PIPE, shell=True)
-    return (str(p.communicate()[0]).replace('b','').replace('\'' , '').replace('\\n' , '\n'))
+    return (str(p.communicate()[0]).replace('\'' , '').replace('\\n' , '\n'))
 
 def execC(cmd):
     p = subprocess.Popen('gcc '+cmd, stdout=subprocess.PIPE, shell=True)
@@ -78,6 +79,7 @@ def generateOutputs(quant, directory, program, lang='Python3'):
         for i in range(quant):
             file = output_filename+str(i+1)+output_ext
             results = execPython3(program +' < '+ directory+'/'+input_folder_name+input_filename+str(i+1)+input_ext)
+            print 'RESULTADO AE '+results           
 
             with open(directory+'/'+'out/'+file, 'w') as out:
                 out.write(results.rstrip())
@@ -94,13 +96,12 @@ def generateOutputs(quant, directory, program, lang='Python3'):
         for i in range(quant):
             file = output_filename+str(i+1)+output_ext
             results = execC(program +' < '+ directory+'/'+input_folder_name+input_filename+str(i+1)+input_ext)
-            print 'RESULTADO AE '+results           
 
             with open(directory+'/'+'out/'+file, 'w') as out:
                 out.write(results.rstrip())
 
     
-    os.remove('a.out')
+        os.remove('a.out')
 
 @app.route('/test', methods=['GET'])
 def hello():
@@ -118,6 +119,8 @@ def grade():
     o_outs = data['o_outs']
 
     code = helper.unicodeToAscii(code)
+
+    print code
 
     foldername = helper.removeExt(filename)
     qtd_inputs = len(inputs)
