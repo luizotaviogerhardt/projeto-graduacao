@@ -187,8 +187,6 @@ def submit():
     #          input_file.write(entrada.rstrip())
     #          i+=1
 
-
-
     if lang == 'Python3':
         with open("tmp.py", 'w') as program_file:
             program_file.write(code)
@@ -201,6 +199,78 @@ def submit():
     print result
     return json.dumps({'output' : result})
 
+
+@app.route('/inouts', methods=['POST'])
+def inouts():
+
+    data = json.loads(request.data)
+    print data
+
+    identifier = data['id']
+    inputs = data['inputs']
+    o_outs = data['o_outs']
+
+    foldername = "inouts/"+identifier
+    if not os.path.exists(foldername):
+        os.makedirs(foldername)
+        os.makedirs(foldername+'/'+'in')
+        os.makedirs(foldername+'/'+'oout')
+        os.makedirs(directory+'/'+'out')
+
+    i = 1
+    for entrada in inputs:
+        with open(foldername+'/'+'in/'+"in"+str(i)+'.in', 'w') as input_file:
+             input_file.write(entrada.rstrip())
+             i+=1
+
+    i = 1
+    for o_out in o_outs:
+        with open(foldername+'/'+'oout/'+'out'+str(i)+'.oout', 'w') as oout_file:
+             oout_file.write(o_out.rstrip())
+             i+=1
+
+
+    return json.dumps({'status' : "OK"})
+
+
+@app.route('/autoeval', methods=['POST'])
+def autoeval():
+
+    data = json.loads(request.data)
+    print data
+
+    identifier = str(data['id'])
+    lang = data['language']
+    code = data['code']
+
+    id_counter = int(identifier)
+
+    code = helper.unicodeToAscii(code)
+
+
+    if lang == 'Python3' or lang == 'Python':
+        ext = ".py"
+    if lang == 'C':
+        ext = ".c"
+
+    foldername = "inouts/"+identifier
+    filename = identifier+ext
+
+    path, dirs, files = next(os.walk(foldername+'/'+'in/'))
+    qty = len(files)
+
+
+    print(qty)
+
+    with open(foldername+'/'+filename, 'w') as program_file:
+        program_file.write(code)
+
+
+    generateOutputs(qty, foldername, foldername+'/'+filename, lang)
+    grade = evaluate(foldername, qty)
+
+    print grade
+    return json.dumps({'grade' : grade})
 
 
 @app.route('/')

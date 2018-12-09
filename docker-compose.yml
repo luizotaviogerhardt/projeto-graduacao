@@ -1,0 +1,14 @@
+version: '2.0'
+services:
+
+  sisyphus:
+    image: pg/sisyphus:latest
+    container_name: sisyphus
+    ports:
+      - "5000:5000"
+
+  khoeus:
+    image: pg/khoeus:latest
+    container_name: khoeus
+    ports:
+      - "3000:3000"
