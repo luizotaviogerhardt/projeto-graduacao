@@ -6,11 +6,15 @@ import os
 import subprocess
 import json
 import time
+import flask
 
 from flask import Flask
 from flask import request
 
+from flask_cors import CORS
+
 app = Flask(__name__)
+CORS(app)
 
 input_filename  = 'in'
 output_filename = 'out'
@@ -56,7 +60,7 @@ def evaluate(directory, quant):
     return round((1 - frac)*100,2)
 
 def execPython3(cmd):
-    print cmd
+    print 'python3 '+cmd
     p = subprocess.Popen('python3 '+cmd, stdout=subprocess.PIPE, shell=True)
     return (str(p.communicate()[0]).replace('\'' , '').replace('\\n' , '\n'))
 
@@ -96,21 +100,23 @@ def generateOutputs(quant, directory, program, lang='Python3'):
         for i in range(quant):
             file = output_filename+str(i+1)+output_ext
             results = execC(program +' < '+ directory+'/'+input_folder_name+input_filename+str(i+1)+input_ext)
+            print 'RESULTADO AE '+results  
 
             with open(directory+'/'+'out/'+file, 'w') as out:
                 out.write(results.rstrip())
 
     
-        os.remove('a.out')
+        #os.remove('a.out')
 
 @app.route('/test', methods=['GET'])
 def hello():
-    return "Hello World!"
+    return json.dumps({'sucess' : "OK"})
 
 @app.route('/evaluate', methods=['POST'])
 def grade():
 
     data = json.loads(request.data)
+    print(data)
 
     filename = data['filename']
     code = data['code']
@@ -119,8 +125,12 @@ def grade():
     o_outs = data['o_outs']
 
     code = helper.unicodeToAscii(code)
+    # inputs = helper.unicodeListToAscii(inputs)
+    # o_outs = helper.unicodeListToAscii(o_outs)
 
     print code
+    print inputs
+    print o_outs
 
     foldername = helper.removeExt(filename)
     qtd_inputs = len(inputs)
@@ -157,6 +167,45 @@ def grade():
 
     print json_response
     return json_response
+
+
+@app.route('/compile', methods=['POST'])
+def submit():
+
+    data = json.loads(request.data)
+    print data
+
+
+    code = data['code']
+    lang = data['language']
+
+    #os.makedirs("tmp")
+
+    # i = 1
+    # for entrada in inputs:
+    #     with open("tmp/ins/in"+str(i)+'.in', 'w') as input_file:
+    #          input_file.write(entrada.rstrip())
+    #          i+=1
+
+
+
+    if lang == 'Python3':
+        with open("tmp.py", 'w') as program_file:
+            program_file.write(code)
+
+        result = execPython3("tmp.py")
+        os.remove("tmp.py")
+
+    #os.remove("tmp")
+
+    print result
+    return json.dumps({'output' : result})
+
+
+
+@app.route('/')
+def index():
+    return flask.render_template('index.html')
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')

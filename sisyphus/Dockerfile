@@ -16,6 +16,8 @@ RUN apt-get -qqy --no-install-recommends install \
 
 RUN pip install --upgrade pip
 RUN pip install flask
+RUN pip install flask-cors
+
 
 RUN mkdir /app
 COPY ./app /app

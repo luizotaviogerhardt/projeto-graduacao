@@ -1,4 +1,5 @@
 import unicodedata
+import urllib
 
 
 def formatOficialExt(name):
@@ -12,3 +13,14 @@ def removeExt(name):
 
 def unicodeToAscii(code):
 	return unicodedata.normalize('NFKD', code).encode('ascii','ignore')
+
+def urlDecode(url):
+	return urllib.unquote(url).decode('ascii')
+
+def unicodeListToAscii(array):
+	asciiList = []
+
+	for entry in array:
+		asciiList.append(unicodeToAscii(entry))
+
+	return asciiList
