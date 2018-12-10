@@ -7,6 +7,7 @@ import subprocess
 import json
 import time
 import flask
+import sqlite3
 
 from flask import Flask
 from flask import request
@@ -215,7 +216,7 @@ def inouts():
         os.makedirs(foldername)
         os.makedirs(foldername+'/'+'in')
         os.makedirs(foldername+'/'+'oout')
-        os.makedirs(directory+'/'+'out')
+        os.makedirs(foldername+'/'+'out')
 
     i = 1
     for entrada in inputs:
@@ -239,6 +240,7 @@ def autoeval():
     data = json.loads(request.data)
     print data
 
+    user_id = int(data['user_id'])
     identifier = str(data['id'])
     lang = data['language']
     code = data['code']
@@ -268,6 +270,33 @@ def autoeval():
 
     generateOutputs(qty, foldername, foldername+'/'+filename, lang)
     grade = evaluate(foldername, qty)
+
+    conn = sqlite3.connect('./../../khoeus-app/db/development.sqlite3')
+    cursor = conn.cursor()
+
+    # cursor.execute('update submissions set grade = '+str(grade)+  ' where user_id = '+str(user_id) +' AND id = '+str(id_counter)+';')
+
+    cursor.execute("""
+    UPDATE submissions 
+    SET grade = ?
+    WHERE id = ? AND user_id = ?
+    """, (grade, id_counter, user_id))
+
+
+    cursor.execute("""
+        SELECT grade 
+        FROM submissions
+        WHERE id = ? AND user_id = ?
+        """, (id_counter, user_id))
+    abc = cursor.fetchall()
+    print abc
+
+    conn.commit()
+
+    conn.close()
+
+
+
 
     print grade
     return json.dumps({'grade' : grade})
