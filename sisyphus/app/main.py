@@ -8,9 +8,11 @@ import json
 import time
 import flask
 import sqlite3
+import shutil
 
 from flask import Flask
 from flask import request
+from flask import Response
 
 from flask_cors import CORS
 
@@ -61,9 +63,17 @@ def evaluate(directory, quant):
     return round((1 - frac)*100,2)
 
 def execPython3(cmd):
-    print 'python3 '+cmd
-    p = subprocess.Popen('python3 '+cmd, stdout=subprocess.PIPE, shell=True)
-    return (str(p.communicate()[0]).replace('\'' , '').replace('\\n' , '\n'))
+    try:
+        print 'python3 '+cmd
+        check = subprocess.check_output('python3 '+cmd, stderr=subprocess.STDOUT, shell=True)
+        print check
+        p = subprocess.Popen('python3 '+cmd, stdout=subprocess.PIPE, shell=True)
+        return (str(p.communicate()[0]).replace('\'' , '').replace('\\n' , '\n'))
+    except subprocess.CalledProcessError as e:
+        err = str(e.output).replace('File "tmp.py",', "Error at ")
+        print err
+        return err;
+
 
 def execPython(cmd):
     p = subprocess.Popen('python '+cmd, stdout=subprocess.PIPE, shell=True)
@@ -179,23 +189,36 @@ def submit():
 
     code = data['code']
     lang = data['language']
+    entrada = data['input']
 
     #os.makedirs("tmp")
 
-    # i = 1
-    # for entrada in inputs:
-    #     with open("tmp/ins/in"+str(i)+'.in', 'w') as input_file:
-    #          input_file.write(entrada.rstrip())
-    #          i+=1
+    with open("tmp.input", 'w') as input_file:
+             input_file.write(entrada.rstrip())
 
     if lang == 'Python3':
         with open("tmp.py", 'w') as program_file:
             program_file.write(code)
 
-        result = execPython3("tmp.py")
+        result = execPython3("tmp.py < tmp.input")
         os.remove("tmp.py")
 
-    #os.remove("tmp")
+    if lang == 'Python':
+        with open("tmp.py", 'w') as program_file:
+            program_file.write(code)
+
+        result = execPython("tmp.py < tmp.input")
+        os.remove("tmp.py")
+
+
+    if lang == 'C':
+        with open("tmp.c", 'w') as program_file:
+            program_file.write(code)
+
+        result = execC("tmp.c < tmp.input")
+        os.remove("tmp.c")
+
+    os.remove("tmp.input")
 
     print result
     return json.dumps({'output' : result})
@@ -211,12 +234,29 @@ def inouts():
     inputs = data['inputs']
     o_outs = data['o_outs']
 
+    if identifier == "new":
+        conn = sqlite3.connect('/DbVolume:/db/development.sqlite3')
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id 
+            FROM board_items
+            ORDER BY id DESC
+            """)
+
+        ids = cursor.fetchall()
+        print ids
+        identifier = str(int(ids[0][0])+1)
+        
+
+
     foldername = "inouts/"+identifier
-    if not os.path.exists(foldername):
-        os.makedirs(foldername)
-        os.makedirs(foldername+'/'+'in')
-        os.makedirs(foldername+'/'+'oout')
-        os.makedirs(foldername+'/'+'out')
+    if os.path.exists(foldername):
+        shutil.rmtree(foldername)
+
+    os.makedirs(foldername)
+    os.makedirs(foldername+'/'+'in')
+    os.makedirs(foldername+'/'+'oout')
+    os.makedirs(foldername+'/'+'out')
 
     i = 1
     for entrada in inputs:
@@ -257,7 +297,6 @@ def autoeval():
 
     foldername = "inouts/"+identifier
     filename = identifier+ext
-
     path, dirs, files = next(os.walk(foldername+'/'+'in/'))
     qty = len(files)
 
@@ -271,32 +310,60 @@ def autoeval():
     generateOutputs(qty, foldername, foldername+'/'+filename, lang)
     grade = evaluate(foldername, qty)
 
-    conn = sqlite3.connect('./../../khoeus-app/db/development.sqlite3')
-    cursor = conn.cursor()
+    # conn = sqlite3.connect('./../../khoeus-app/db/development.sqlite3')
+    # cursor = conn.cursor()
 
-    # cursor.execute('update submissions set grade = '+str(grade)+  ' where user_id = '+str(user_id) +' AND id = '+str(id_counter)+';')
+    # # cursor.execute('update submissions set grade = '+str(grade)+  ' where user_id = '+str(user_id) +' AND id = '+str(id_counter)+';')
 
-    cursor.execute("""
-    UPDATE submissions 
-    SET grade = ?
-    WHERE id = ? AND user_id = ?
-    """, (grade, id_counter, user_id))
-
-
-    cursor.execute("""
-        SELECT grade 
-        FROM submissions
-        WHERE id = ? AND user_id = ?
-        """, (id_counter, user_id))
-    abc = cursor.fetchall()
-    print abc
-
-    conn.commit()
-
-    conn.close()
+    # # cursor.execute("""
+    # # UPDATE submissions 
+    # # SET grade = ?
+    # # WHERE id = ? AND user_id = ?
+    # # """, (grade, id_counter, user_id))
 
 
+    # # cursor.execute("""
+    # #     SELECT grade 
+    # #     FROM submissions
+    # #     WHERE id = ? AND user_id = ?
+    # #     """, (id_counter, user_id))
+    # # # abc = cursor.fetchall()
+    # # # print abc
 
+    # conn.commit()
+
+    # conn.close()
+
+
+    foldername = "grades/"+identifier
+    if os.path.exists(foldername):
+        shutil.rmtree(foldername)
+
+    os.makedirs(foldername)
+
+    with open(foldername+"/user_"+str(user_id), 'w') as grade_file:
+        grade_file.write(str(grade))
+
+
+    print("vo retornar")
+
+    print grade
+    return json.dumps({'grade' : grade})
+
+
+@app.route('/grade/<id>/<user_id>', methods=['GET'])
+def get_grade(id, user_id):
+
+
+
+    path = "grades/"+id+"/"+"user_"+user_id
+    print path
+    
+    if not os.path.exists(path):
+        return Response("{'error':'User not found'}", status=500, mimetype='application/json')
+
+    with open(path, 'r') as grade_file:
+        grade = grade_file.read()
 
     print grade
     return json.dumps({'grade' : grade})

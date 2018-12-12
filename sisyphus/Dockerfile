@@ -22,6 +22,7 @@ RUN pip install flask-cors
 RUN mkdir /app
 COPY ./app /app
 
+
 WORKDIR /app
 EXPOSE 5000
 ENTRYPOINT ["python"]
